@@ -5,9 +5,13 @@ import plotly.express as px
 # Load data
 df = pd.read_csv("output.csv")
 
+# Clean data properly
 df["date"] = pd.to_datetime(df["date"], errors="coerce")
 df["sales"] = pd.to_numeric(df["sales"], errors="coerce")
-df = df.dropna()
+df["region"] = df["region"].str.lower()
+
+# Drop only required missing values
+df = df.dropna(subset=["date", "sales", "region"])
 df = df.sort_values("date")
 
 # Regions list
@@ -38,14 +42,14 @@ app.layout = html.Div(style={"fontFamily": "Arial", "padding": "20px"}, children
     dcc.Graph(id="sales-chart")
 ])
 
-# Callback for filtering
+
 @app.callback(
     Output("sales-chart", "figure"),
     Input("region-filter", "value")
 )
 def update_graph(selected_region):
 
-    filtered_df = df.copy()
+    filtered_df = df
 
     if selected_region != "all":
         filtered_df = filtered_df[filtered_df["region"] == selected_region]
@@ -58,15 +62,15 @@ def update_graph(selected_region):
     )
 
     fig.add_vline(
-        x="2021-01-15",
+        x=pd.to_datetime("2021-01-15"),
         line_width=3,
         line_dash="dash",
         line_color="red"
     )
 
     fig.add_annotation(
-        x="2021-01-15",
-        y=filtered_df["sales"].max() if not filtered_df.empty else 0,
+        x=pd.to_datetime("2021-01-15"),
+        y=filtered_df["sales"].max(skipna=True) if not filtered_df.empty else 0,
         text="Price Increase",
         showarrow=True,
         arrowhead=1
